@@ -1,9 +1,9 @@
 import { useEffect, useState, type FC } from 'react'
 import { Link, useParams } from '../router'
-import { getJournalist } from '../services/api'
+import { ApiRequestError, getAnalysisForJournalist, getJournalist } from '../services/api'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorAlert } from '../components/common/ErrorAlert'
-import type { AsyncState, Journalist } from '../types'
+import type { Analysis, AsyncState, Journalist } from '../types'
 
 function splitList(value: string): string[] {
   return value
@@ -16,6 +16,13 @@ export const JournalistDetailsPage: FC = () => {
   const { id } = useParams()
   const [campaignId] = useState<string | null>(() => localStorage.getItem('active_campaign_id'))
   const [state, setState] = useState<AsyncState<Journalist>>({ status: 'idle', data: null, error: null })
+
+  type AnalysisLoadStatus = 'idle' | 'loading' | 'success' | 'not-analyzed' | 'error'
+  const [analysisState, setAnalysisState] = useState<{
+    status: AnalysisLoadStatus
+    data: Analysis | null
+    error: string | null
+  }>({ status: 'idle', data: null, error: null })
 
   const loadJournalist = () => {
     if (!campaignId || !id) return
@@ -31,8 +38,27 @@ export const JournalistDetailsPage: FC = () => {
       )
   }
 
+  const loadAnalysis = () => {
+    if (!campaignId || !id) return
+    setAnalysisState({ status: 'loading', data: null, error: null })
+    getAnalysisForJournalist(campaignId, id)
+      .then((analysis) => setAnalysisState({ status: 'success', data: analysis, error: null }))
+      .catch((err) => {
+        if (err instanceof ApiRequestError && err.status === 404) {
+          setAnalysisState({ status: 'not-analyzed', data: null, error: null })
+          return
+        }
+        setAnalysisState({
+          status: 'error',
+          data: null,
+          error: err instanceof Error ? err.message : 'Failed to load analysis',
+        })
+      })
+  }
+
   useEffect(() => {
     loadJournalist()
+    loadAnalysis()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId, id])
 
@@ -142,9 +168,75 @@ export const JournalistDetailsPage: FC = () => {
 
           <div className="detail-pane ai-pane">
             <h3>AI Relevance Breakdown</h3>
-            <p className="detail-text">
-              AI-generated relevance analysis will appear here once journalist analysis has been run.
-            </p>
+
+            {analysisState.status === 'loading' && <LoadingSpinner message="Loading analysis..." size="small" />}
+
+            {analysisState.status === 'error' && (
+              <ErrorAlert
+                title="Unable to Load Analysis"
+                message={analysisState.error ?? 'Something went wrong'}
+                onRetry={loadAnalysis}
+              />
+            )}
+
+            {analysisState.status === 'not-analyzed' && (
+              <p className="detail-text">
+                This journalist has not been analyzed yet. Run relevance analysis from the{' '}
+                <Link to="/analysis">Analysis page</Link> to see a score, priority, and supporting
+                evidence here.
+              </p>
+            )}
+
+            {analysisState.status === 'success' && analysisState.data && (
+              <>
+                <p>
+                  <strong>Score:</strong> {analysisState.data.score} / 100 (
+                  <span className={`priority-text ${analysisState.data.priority}`}>
+                    {analysisState.data.priority} priority
+                  </span>
+                  )
+                </p>
+
+                <p>
+                  <strong>Reasons:</strong>
+                </p>
+                {analysisState.data.reasons.length > 0 ? (
+                  <ul>
+                    {analysisState.data.reasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="detail-text">No reasons provided</p>
+                )}
+
+                <p>
+                  <strong>Supporting Evidence:</strong>
+                </p>
+                {analysisState.data.supporting_evidence.length > 0 ? (
+                  <ul>
+                    {analysisState.data.supporting_evidence.map((evidence) => (
+                      <li key={evidence}>{evidence}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="detail-text">No supporting evidence provided</p>
+                )}
+
+                <p>
+                  <strong>Potential Concerns:</strong>
+                </p>
+                {analysisState.data.concerns.length > 0 ? (
+                  <ul>
+                    {analysisState.data.concerns.map((concern) => (
+                      <li key={concern}>{concern}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="detail-text">No concerns noted</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

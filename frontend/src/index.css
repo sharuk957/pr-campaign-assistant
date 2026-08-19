@@ -522,6 +522,48 @@ a:hover {
   border: 1px solid var(--success-border);
 }
 
+.ranking-badge.medium {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.ranking-badge.low,
+.ranking-badge.pending {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.ranking-badge.failed {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
+}
+
+.priority-text.high {
+  color: var(--success-text);
+  font-weight: 600;
+}
+
+.priority-text.medium {
+  color: var(--warning-text);
+  font-weight: 600;
+}
+
+.priority-text.low {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.analysis-run-card .card-header-row {
+  margin-bottom: 4px;
+}
+
+.analysis-pending-hint {
+  margin-bottom: 16px;
+}
+
 .ranking-info {
   flex: 1;
   font-size: 13px;

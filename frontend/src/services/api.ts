@@ -1,6 +1,8 @@
 import type {
+  Analysis,
   ApiErrorResponse,
   Campaign,
+  CampaignAnalysisRunResult,
   CampaignCreatePayload,
   HealthResponse,
   Journalist,
@@ -137,4 +139,20 @@ export async function importJournalistsCsv(
     `/api/campaigns/${campaignId}/journalists/import`,
     formData
   )
+}
+
+// Analysis API endpoints
+export async function runCampaignAnalysis(campaignId: string): Promise<CampaignAnalysisRunResult> {
+  return apiClient.post<CampaignAnalysisRunResult>(`/api/campaigns/${campaignId}/analysis`)
+}
+
+export async function listAnalyses(campaignId: string): Promise<Analysis[]> {
+  return apiClient.get<Analysis[]>(`/api/campaigns/${campaignId}/analysis`)
+}
+
+export async function getAnalysisForJournalist(
+  campaignId: string,
+  journalistId: string
+): Promise<Analysis> {
+  return apiClient.get<Analysis>(`/api/campaigns/${campaignId}/analysis/${journalistId}`)
 }

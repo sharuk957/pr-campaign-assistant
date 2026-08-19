@@ -74,6 +74,22 @@ export interface Analysis {
   created_at?: string
 }
 
+export interface JournalistAnalysisOutcome {
+  journalist_id: string
+  journalist_name: string
+  status: 'success' | 'failed'
+  analysis: Analysis | null
+  error: string | null
+}
+
+export interface CampaignAnalysisRunResult {
+  campaign_id: string
+  total_journalists: number
+  succeeded: number
+  failed: number
+  results: JournalistAnalysisOutcome[]
+}
+
 export interface Pitch {
   id: string
   campaign_id: string
