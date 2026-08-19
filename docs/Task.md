@@ -86,8 +86,6 @@ Create:
 ```text
 pr-campaign-assistant/
 ├── README.md
-├── PRD.md
-├── ARCHITECTURE.md
 ├── frontend/
 ├── backend/
 └── sample-data/
