@@ -1,0 +1,4 @@
+name,email,publication,role,topics,bio,recent_articles
+Emma Smith,emma@example.com,Tech Weekly,Technology Writer,"AI;Developer Tools;Python","Technology journalist covering developer tools and AI","AI coding tools;Python security"
+James Chen,james@example.com,Security Today,Cybersecurity Reporter,"Cybersecurity;Cloud;Enterprise","Covers enterprise security and cloud infrastructure","Zero trust adoption;Ransomware trends"
+Priya Patel,priya@example.com,Health Innovations,Health Tech Editor,"Healthcare;Digital Health;AI","Reports on healthcare technology and policy","AI diagnostics;Telehealth regulation"
