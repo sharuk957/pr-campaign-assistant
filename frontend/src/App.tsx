@@ -1,41 +1,31 @@
-import { useEffect, useState } from 'react'
-import { checkBackendHealth } from './services/api'
+import { BrowserRouter, Route, Routes } from './router'
+import { Layout } from './components/Layout/Layout'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
+import { CampaignPage } from './pages/CampaignPage'
+import { JournalistsPage } from './pages/JournalistsPage'
+import { AnalysisPage } from './pages/AnalysisPage'
+import { JournalistDetailsPage } from './pages/JournalistDetailsPage'
+import { PitchPage } from './pages/PitchPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import './App.css'
 
-function App() {
-  const [backendStatus, setBackendStatus] = useState<'loading' | 'connected' | 'error'>(
-    'loading',
-  )
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    checkBackendHealth()
-      .then(() => setBackendStatus('connected'))
-      .catch((error: Error) => {
-        setBackendStatus('error')
-        setErrorMessage(error.message)
-      })
-  }, [])
-
+export function App() {
   return (
-    <main className="app">
-      <h1>PR Campaign Assistant</h1>
-      <p>Identify relevant journalists and generate personalized outreach pitches.</p>
-
-      <section className="status-card">
-        <h2>Backend connection</h2>
-        {backendStatus === 'loading' && <p>Checking backend health...</p>}
-        {backendStatus === 'connected' && (
-          <p className="status-ok">Connected — backend health check passed.</p>
-        )}
-        {backendStatus === 'error' && (
-          <p className="status-error">
-            Unable to reach the backend.
-            {errorMessage ? ` ${errorMessage}` : ''}
-          </p>
-        )}
-      </section>
-    </main>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<CampaignPage />} />
+            <Route path="/campaign" element={<CampaignPage />} />
+            <Route path="/journalists" element={<JournalistsPage />} />
+            <Route path="/analysis" element={<AnalysisPage />} />
+            <Route path="/journalists/details" element={<JournalistDetailsPage />} />
+            <Route path="/pitch" element={<PitchPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 
