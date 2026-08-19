@@ -4,6 +4,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.ai.client import GroqClient, LLMClient
 from app.ai.errors import AIProviderError, AIResponseError
+from app.ai.grounding import build_vocabulary, extract_journalist_coverage_claims, find_ungrounded_items
 from app.ai.prompts import (
     ANALYSIS_SYSTEM_PROMPT,
     PITCH_SYSTEM_PROMPT,
@@ -30,7 +31,9 @@ class AIService:
     ) -> AnalysisResult:
         user_prompt = build_analysis_user_prompt(campaign, journalist)
         raw_response = self._complete(ANALYSIS_SYSTEM_PROMPT, user_prompt)
-        return self._parse_response(raw_response, AnalysisResult)
+        result = self._parse_response(raw_response, AnalysisResult)
+        self._validate_analysis_grounding(result, journalist)
+        return result
 
     def generate_pitch(
         self,
@@ -40,7 +43,9 @@ class AIService:
     ) -> PitchResult:
         user_prompt = build_pitch_user_prompt(campaign, journalist, analysis)
         raw_response = self._complete(PITCH_SYSTEM_PROMPT, user_prompt)
-        return self._parse_response(raw_response, PitchResult)
+        result = self._parse_response(raw_response, PitchResult)
+        self._validate_pitch_grounding(result, journalist)
+        return result
 
     def _complete(self, system_prompt: str, user_prompt: str) -> str:
         try:
@@ -65,3 +70,28 @@ class AIService:
             raise AIResponseError(
                 "AI response did not match the expected schema", details=exc.errors()
             ) from exc
+
+    @staticmethod
+    def _validate_analysis_grounding(result: AnalysisResult, journalist: JournalistContext) -> None:
+        """Reject supporting evidence that does not reference the journalist's actual information."""
+        vocabulary = build_vocabulary(journalist.topics, journalist.bio, journalist.recent_articles)
+        ungrounded = find_ungrounded_items(result.supporting_evidence, vocabulary)
+        if ungrounded:
+            raise AIResponseError(
+                "AI response included supporting evidence not grounded in the journalist's information",
+                details={"ungrounded_evidence": ungrounded},
+            )
+
+    @staticmethod
+    def _validate_pitch_grounding(result: PitchResult, journalist: JournalistContext) -> None:
+        """Reject pitches that assert journalist coverage topics not present in their actual information."""
+        vocabulary = build_vocabulary(journalist.topics, journalist.bio, journalist.recent_articles)
+        claims = extract_journalist_coverage_claims(result.body) + extract_journalist_coverage_claims(
+            result.subject
+        )
+        ungrounded = find_ungrounded_items(claims, vocabulary)
+        if ungrounded:
+            raise AIResponseError(
+                "AI response made unsupported claims about the journalist's coverage",
+                details={"ungrounded_claims": ungrounded},
+            )

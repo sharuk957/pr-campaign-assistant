@@ -44,6 +44,16 @@ class BadRequestError(AppException):
         )
 
 
+class AIGenerationError(AppException):
+    def __init__(self, message: str = "AI generation failed", details: Optional[Any] = None):
+        super().__init__(
+            code="AI_GENERATION_FAILED",
+            message=message,
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            details=details,
+        )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:

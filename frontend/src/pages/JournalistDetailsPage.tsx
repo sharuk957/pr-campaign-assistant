@@ -261,7 +261,7 @@ export const JournalistDetailsPage: FC = () => {
         <Link to="/journalists" className="btn btn-secondary">
           &larr; Back to Journalists
         </Link>
-        <Link to="/pitch" className="btn btn-primary">
+        <Link to={id ? `/pitch/${id}` : '/pitch'} className="btn btn-primary">
           Next: Generate Outreach Pitch &rarr;
         </Link>
       </div>

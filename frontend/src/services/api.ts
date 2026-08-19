@@ -7,6 +7,7 @@ import type {
   HealthResponse,
   Journalist,
   JournalistImportResult,
+  Pitch,
 } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
@@ -155,4 +156,16 @@ export async function getAnalysisForJournalist(
   journalistId: string
 ): Promise<Analysis> {
   return apiClient.get<Analysis>(`/api/campaigns/${campaignId}/analysis/${journalistId}`)
+}
+
+// Pitch API endpoints
+export async function generatePitch(campaignId: string, journalistId: string): Promise<Pitch> {
+  return apiClient.post<Pitch>(`/api/campaigns/${campaignId}/journalists/${journalistId}/pitch`)
+}
+
+export async function getPitchForJournalist(
+  campaignId: string,
+  journalistId: string
+): Promise<Pitch> {
+  return apiClient.get<Pitch>(`/api/campaigns/${campaignId}/journalists/${journalistId}/pitch`)
 }

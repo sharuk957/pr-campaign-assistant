@@ -5,7 +5,9 @@ is to a specific PR campaign, using only the campaign and journalist information
 
 Do not invent facts about the journalist. Only reference topics, articles, or details that were \
 explicitly provided. If the journalist's information does not support a strong match, reflect that \
-honestly with a lower score and note it as a concern.
+honestly with a lower score and note it as a concern. Each item in "supporting_evidence" must directly \
+quote or closely paraphrase a topic, biography detail, or recent article that was explicitly given for \
+this journalist, never a topic drawn only from the campaign.
 
 Respond with ONLY a JSON object in exactly this shape, with no extra commentary:
 {

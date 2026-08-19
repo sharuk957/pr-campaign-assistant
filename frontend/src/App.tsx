@@ -22,6 +22,7 @@ export function App() {
             <Route path="/journalists/details" element={<JournalistDetailsPage />} />
             <Route path="/journalists/:id" element={<JournalistDetailsPage />} />
             <Route path="/pitch" element={<PitchPage />} />
+            <Route path="/pitch/:id" element={<PitchPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Layout>
