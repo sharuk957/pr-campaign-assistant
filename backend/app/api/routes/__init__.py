@@ -1,1 +1,3 @@
-# API routes package
+from app.api.routes import campaigns, health
+
+__all__ = ["campaigns", "health"]

@@ -1,4 +1,9 @@
-import type { ApiErrorResponse, HealthResponse } from '../types'
+import type {
+  ApiErrorResponse,
+  Campaign,
+  CampaignCreatePayload,
+  HealthResponse,
+} from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 
@@ -96,4 +101,17 @@ export const apiClient = {
 
 export async function checkBackendHealth(): Promise<HealthResponse> {
   return request<HealthResponse>('/health')
+}
+
+// Campaign API endpoints
+export async function createCampaign(data: CampaignCreatePayload): Promise<Campaign> {
+  return apiClient.post<Campaign>('/api/campaigns', data)
+}
+
+export async function getCampaign(campaignId: string): Promise<Campaign> {
+  return apiClient.get<Campaign>(`/api/campaigns/${campaignId}`)
+}
+
+export async function listCampaigns(): Promise<Campaign[]> {
+  return apiClient.get<Campaign[]>('/api/campaigns')
 }

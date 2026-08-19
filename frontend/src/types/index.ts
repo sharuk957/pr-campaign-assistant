@@ -13,6 +13,16 @@ export interface ApiErrorResponse {
   error: ApiError
 }
 
+export interface CampaignCreatePayload {
+  name: string
+  company_name: string
+  product_description: string
+  campaign_description: string
+  target_audience: string
+  key_topics: string
+  desired_outcome: string
+}
+
 export interface Campaign {
   id: string
   name: string
@@ -22,7 +32,7 @@ export interface Campaign {
   target_audience: string
   key_topics: string
   desired_outcome: string
-  created_at?: string
+  created_at: string
 }
 
 export interface Journalist {

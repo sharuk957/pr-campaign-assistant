@@ -9,7 +9,8 @@ def test_default_settings() -> None:
     assert settings.PROJECT_NAME == "PR Campaign Assistant API"
     assert settings.ENVIRONMENT == "development"
     assert "sqlite" in settings.DATABASE_URL
-    assert settings.FRONTEND_ORIGIN == "http://localhost:5173"
+    assert "http://localhost:5173" in settings.cors_origins
+    assert "http://127.0.0.1:5173" in settings.cors_origins
 
 
 def test_custom_environment_settings() -> None:
@@ -24,4 +25,4 @@ def test_custom_environment_settings() -> None:
         assert settings.PROJECT_NAME == "Custom PR API"
         assert settings.ENVIRONMENT == "production"
         assert settings.DATABASE_URL == "sqlite:///./custom.db"
-        assert settings.FRONTEND_ORIGIN == "https://app.example.com"
+        assert "https://app.example.com" in settings.cors_origins
