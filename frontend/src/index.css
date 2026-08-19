@@ -1004,6 +1004,123 @@ a:hover {
   justify-content: flex-end;
 }
 
+/* Journalist Upload & List */
+.empty-state-card,
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.upload-card {
+  margin-bottom: 20px;
+}
+
+.upload-hint {
+  margin-bottom: 16px;
+}
+
+.upload-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.selected-file-name {
+  font-size: 14px;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 120px;
+}
+
+.import-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.import-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.import-errors-list {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+}
+
+.import-errors-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.import-errors-list ul {
+  list-style: disc;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journalist-list-card {
+  margin-bottom: 20px;
+}
+
+.journalist-table-wrapper {
+  overflow-x: auto;
+}
+
+.journalist-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.journalist-table th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.journalist-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.journalist-table-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.journalist-table-row:hover {
+  background-color: var(--bg-hover);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .nav-steps-container {

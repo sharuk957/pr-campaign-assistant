@@ -48,6 +48,18 @@ export interface Journalist {
   created_at?: string
 }
 
+export interface JournalistImportRowError {
+  row: number
+  message: string
+}
+
+export interface JournalistImportResult {
+  imported_count: number
+  total_rows: number
+  errors: JournalistImportRowError[]
+  journalists: Journalist[]
+}
+
 export type AnalysisPriority = 'high' | 'medium' | 'low'
 
 export interface Analysis {

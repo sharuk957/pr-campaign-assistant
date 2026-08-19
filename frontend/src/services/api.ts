@@ -3,6 +3,8 @@ import type {
   Campaign,
   CampaignCreatePayload,
   HealthResponse,
+  Journalist,
+  JournalistImportResult,
 } from '../types'
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
@@ -114,4 +116,25 @@ export async function getCampaign(campaignId: string): Promise<Campaign> {
 
 export async function listCampaigns(): Promise<Campaign[]> {
   return apiClient.get<Campaign[]>('/api/campaigns')
+}
+
+// Journalist API endpoints
+export async function listJournalists(campaignId: string): Promise<Journalist[]> {
+  return apiClient.get<Journalist[]>(`/api/campaigns/${campaignId}/journalists`)
+}
+
+export async function getJournalist(campaignId: string, journalistId: string): Promise<Journalist> {
+  return apiClient.get<Journalist>(`/api/campaigns/${campaignId}/journalists/${journalistId}`)
+}
+
+export async function importJournalistsCsv(
+  campaignId: string,
+  file: File
+): Promise<JournalistImportResult> {
+  const formData = new FormData()
+  formData.append('file', file)
+  return apiClient.post<JournalistImportResult>(
+    `/api/campaigns/${campaignId}/journalists/import`,
+    formData
+  )
 }
