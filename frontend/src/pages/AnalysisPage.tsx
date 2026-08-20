@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FC } from 'react'
 import { Link, useNavigate } from '../router'
-import { getCampaign, listAnalyses, listJournalists, runCampaignAnalysis } from '../services/api'
+import { ApiRequestError, getCampaign, listAnalyses, listJournalists, runCampaignAnalysis } from '../services/api'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorAlert } from '../components/common/ErrorAlert'
 import type { Analysis, AsyncState, Journalist } from '../types'
@@ -53,6 +53,7 @@ export const AnalysisPage: FC = () => {
   const [checkingCampaign, setCheckingCampaign] = useState(
     () => localStorage.getItem('active_campaign_id') !== null
   )
+  const [campaignLoadError, setCampaignLoadError] = useState<string | null>(null)
 
   const [dataState, setDataState] = useState<AsyncState<AnalysisRow[]>>({
     status: 'idle',
@@ -79,7 +80,7 @@ export const AnalysisPage: FC = () => {
       })
   }, [])
 
-  useEffect(() => {
+  const loadCampaign = useCallback(() => {
     const activeId = localStorage.getItem('active_campaign_id')
     if (!activeId) return
 
@@ -88,9 +89,25 @@ export const AnalysisPage: FC = () => {
         setCampaignId(campaign.id)
         loadData(campaign.id)
       })
-      .catch(() => setCampaignId(null))
+      .catch((err) => {
+        if (err instanceof ApiRequestError && err.code === 'NOT_FOUND') {
+          setCampaignId(null)
+          return
+        }
+        setCampaignLoadError(err instanceof Error ? err.message : 'Failed to load campaign data')
+      })
       .finally(() => setCheckingCampaign(false))
   }, [loadData])
+
+  useEffect(() => {
+    loadCampaign()
+  }, [loadCampaign])
+
+  const handleRetryLoadCampaign = () => {
+    setCheckingCampaign(true)
+    setCampaignLoadError(null)
+    loadCampaign()
+  }
 
   const handleRunAnalysis = async () => {
     if (!campaignId) return
@@ -135,6 +152,20 @@ export const AnalysisPage: FC = () => {
     return (
       <div className="page analysis-page">
         <LoadingSpinner message="Loading campaign data..." />
+      </div>
+    )
+  }
+
+  if (campaignLoadError) {
+    return (
+      <div className="page analysis-page">
+        <div className="page-card">
+          <ErrorAlert
+            title="Unable to Load Campaign Data"
+            message={campaignLoadError}
+            onRetry={handleRetryLoadCampaign}
+          />
+        </div>
       </div>
     )
   }
@@ -281,7 +312,7 @@ export const AnalysisPage: FC = () => {
                 className="btn btn-sm btn-secondary"
                 onClick={() => navigate(`/journalists/${row.journalistId}`)}
               >
-                View Details &rarr;
+                {row.status === 'success' ? 'View Details & Generate Pitch' : 'View Details'} &rarr;
               </button>
             </div>
           ))}
@@ -291,9 +322,6 @@ export const AnalysisPage: FC = () => {
       <div className="placeholder-actions">
         <Link to="/journalists" className="btn btn-secondary">
           &larr; Back to Journalists
-        </Link>
-        <Link to="/pitch" className="btn btn-primary">
-          Next: Generate Outreach Pitch &rarr;
         </Link>
       </div>
     </div>

@@ -257,14 +257,18 @@ export const JournalistDetailsPage: FC = () => {
 
       {renderBody()}
 
-      <div className="placeholder-actions">
-        <Link to="/journalists" className="btn btn-secondary">
-          &larr; Back to Journalists
-        </Link>
-        <Link to={id ? `/pitch/${id}` : '/pitch'} className="btn btn-primary">
-          Next: Generate Outreach Pitch &rarr;
-        </Link>
-      </div>
+      {id && (
+        <div className="placeholder-actions">
+          <Link to="/journalists" className="btn btn-secondary">
+            &larr; Back to Journalists
+          </Link>
+          {analysisState.status === 'success' && (
+            <Link to={`/pitch/${id}`} className="btn btn-primary">
+              Next: Generate Outreach Pitch &rarr;
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   )
 }

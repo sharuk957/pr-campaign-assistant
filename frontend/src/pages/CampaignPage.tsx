@@ -1,6 +1,6 @@
-import { useEffect, useState, type FC, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FC, type FormEvent } from 'react'
 import { useNavigate } from '../router'
-import { createCampaign, getCampaign, listCampaigns } from '../services/api'
+import { ApiRequestError, createCampaign, getCampaign, updateCampaign } from '../services/api'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorAlert } from '../components/common/ErrorAlert'
 import type { Campaign, CampaignCreatePayload } from '../types'
@@ -44,47 +44,51 @@ export const CampaignPage: FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
   const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null)
-  const [isLoadingActive, setIsLoadingActive] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [isLoadingActive, setIsLoadingActive] = useState(
+    () => localStorage.getItem('active_campaign_id') !== null
+  )
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(
+    () => localStorage.getItem('active_campaign_id') === null
+  )
+  const [isEditing, setIsEditing] = useState(false)
+
+  // Loading a campaign only ever resolves the ID already recorded as active for this
+  // browser. There is deliberately no fallback that adopts some other existing campaign
+  // from the database — with no active ID, the user always lands on a blank creation form.
+  const loadActiveCampaign = useCallback(() => {
+    const activeId = localStorage.getItem('active_campaign_id')
+    if (!activeId) return
+
+    getCampaign(activeId)
+      .then((campaign) => {
+        setActiveCampaign(campaign)
+        setShowForm(false)
+        setIsLoadingActive(false)
+      })
+      .catch((err) => {
+        if (err instanceof ApiRequestError && err.code === 'NOT_FOUND') {
+          // The stored campaign ID no longer exists; start fresh with a blank form.
+          localStorage.removeItem('active_campaign_id')
+          setActiveCampaign(null)
+          setShowForm(true)
+          setIsLoadingActive(false)
+          return
+        }
+        setLoadError(err instanceof Error ? err.message : 'Failed to load campaign data')
+        setIsLoadingActive(false)
+      })
+  }, [])
 
   useEffect(() => {
-    const activeId = localStorage.getItem('active_campaign_id')
-    if (activeId) {
-      getCampaign(activeId)
-        .then((campaign) => {
-          setActiveCampaign(campaign)
-          setShowForm(false)
-        })
-        .catch(() => {
-          // If active ID is invalid, check if any campaigns exist
-          listCampaigns()
-            .then((campaigns) => {
-              if (campaigns.length > 0) {
-                setActiveCampaign(campaigns[0])
-                localStorage.setItem('active_campaign_id', campaigns[0].id)
-                setShowForm(false)
-              } else {
-                setShowForm(true)
-              }
-            })
-            .catch(() => setShowForm(true))
-        })
-        .finally(() => setIsLoadingActive(false))
-    } else {
-      listCampaigns()
-        .then((campaigns) => {
-          if (campaigns.length > 0) {
-            setActiveCampaign(campaigns[0])
-            localStorage.setItem('active_campaign_id', campaigns[0].id)
-            setShowForm(false)
-          } else {
-            setShowForm(true)
-          }
-        })
-        .catch(() => setShowForm(true))
-        .finally(() => setIsLoadingActive(false))
-    }
-  }, [])
+    loadActiveCampaign()
+  }, [loadActiveCampaign])
+
+  const handleRetryLoad = () => {
+    setIsLoadingActive(true)
+    setLoadError(null)
+    loadActiveCampaign()
+  }
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
@@ -125,18 +129,33 @@ export const CampaignPage: FC = () => {
 
     setIsSubmitting(true)
     try {
-      const created = await createCampaign(formData)
-      setActiveCampaign(created)
-      localStorage.setItem('active_campaign_id', created.id)
+      if (isEditing && activeCampaign) {
+        const updated = await updateCampaign(activeCampaign.id, formData)
+        setActiveCampaign(updated)
+      } else {
+        const created = await createCampaign(formData)
+        setActiveCampaign(created)
+        localStorage.setItem('active_campaign_id', created.id)
+      }
       setShowForm(false)
+      setIsEditing(false)
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Failed to create campaign')
+      setApiError(
+        err instanceof Error
+          ? err.message
+          : isEditing
+            ? 'Failed to update campaign'
+            : 'Failed to create campaign'
+      )
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleStartNew = () => {
+    // Deselect the current campaign immediately so a reload while the blank form is
+    // open doesn't fall back to it — the old campaign is only restored via Cancel.
+    localStorage.removeItem('active_campaign_id')
     setFormData({
       name: '',
       company_name: '',
@@ -148,7 +167,37 @@ export const CampaignPage: FC = () => {
     })
     setErrors({})
     setApiError(null)
+    setIsEditing(false)
     setShowForm(true)
+  }
+
+  const handleEdit = () => {
+    if (!activeCampaign) return
+    setFormData({
+      name: activeCampaign.name,
+      company_name: activeCampaign.company_name,
+      product_description: activeCampaign.product_description,
+      campaign_description: activeCampaign.campaign_description,
+      target_audience: activeCampaign.target_audience,
+      key_topics: activeCampaign.key_topics,
+      desired_outcome: activeCampaign.desired_outcome,
+    })
+    setErrors({})
+    setApiError(null)
+    setIsEditing(true)
+    setShowForm(true)
+  }
+
+  const handleCancelForm = () => {
+    // Restore the campaign handleStartNew deselected, in case the user backs out
+    // without actually creating a new one.
+    if (activeCampaign) {
+      localStorage.setItem('active_campaign_id', activeCampaign.id)
+    }
+    setErrors({})
+    setApiError(null)
+    setIsEditing(false)
+    setShowForm(false)
   }
 
   if (isLoadingActive) {
@@ -179,19 +228,36 @@ export const CampaignPage: FC = () => {
         />
       )}
 
-      {activeCampaign && !showForm ? (
+      {loadError ? (
+        <div className="page-card">
+          <ErrorAlert
+            title="Unable to Load Campaign Data"
+            message={loadError}
+            onRetry={handleRetryLoad}
+          />
+        </div>
+      ) : activeCampaign && !showForm ? (
         <div className="page-card campaign-active-card">
           <div className="card-header-row">
             <div className="active-badge-tag">
               <span className="active-dot" /> Active Campaign
             </div>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={handleStartNew}
-            >
-              + Create New Campaign
-            </button>
+            <div className="card-header-actions">
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleEdit}
+              >
+                Edit Campaign
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={handleStartNew}
+              >
+                + Create New Campaign
+              </button>
+            </div>
           </div>
 
           <h2 className="active-campaign-title">{activeCampaign.name}</h2>
@@ -247,14 +313,17 @@ export const CampaignPage: FC = () => {
       ) : (
         <div className="page-card form-card">
           <div className="form-header-row">
-            <h2 className="form-title">Create New Campaign</h2>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm btn-sample"
-              onClick={handleFillSample}
-            >
-              ✨ Fill Sample Data
-            </button>
+            <h2 className="form-title">{isEditing ? 'Edit Campaign' : 'Create New Campaign'}</h2>
+            {!isEditing && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm btn-sample"
+                disabled={isSubmitting}
+                onClick={handleFillSample}
+              >
+                ✨ Fill Sample Data
+              </button>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="campaign-form" noValidate>
@@ -385,7 +454,8 @@ export const CampaignPage: FC = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowForm(false)}
+                  disabled={isSubmitting}
+                  onClick={handleCancelForm}
                 >
                   Cancel
                 </button>
@@ -396,7 +466,13 @@ export const CampaignPage: FC = () => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <LoadingSpinner inline message="Saving Campaign..." size="small" />
+                  <LoadingSpinner
+                    inline
+                    message={isEditing ? 'Saving Changes...' : 'Saving Campaign...'}
+                    size="small"
+                  />
+                ) : isEditing ? (
+                  'Save Changes'
                 ) : (
                   'Create Campaign'
                 )}

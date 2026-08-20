@@ -57,13 +57,21 @@ class AIGenerationError(AppException):
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+        if exc.status_code >= 500:
+            logger.error(
+                f"{exc.code} on {request.method} {request.url.path}: {exc.message}",
+                extra={"details": exc.details},
+            )
+
         content: dict[str, Any] = {
             "error": {
                 "code": exc.code,
                 "message": exc.message,
             }
         }
-        if exc.details is not None:
+        # Details on 5xx errors may include raw upstream provider payloads; keep those
+        # server-side (logged above) rather than exposing them through the API response.
+        if exc.details is not None and exc.status_code < 500:
             content["error"]["details"] = exc.details
         return JSONResponse(status_code=exc.status_code, content=content)
 

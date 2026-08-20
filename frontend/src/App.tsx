@@ -19,7 +19,6 @@ export function App() {
             <Route path="/campaign" element={<CampaignPage />} />
             <Route path="/journalists" element={<JournalistsPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
-            <Route path="/journalists/details" element={<JournalistDetailsPage />} />
             <Route path="/journalists/:id" element={<JournalistDetailsPage />} />
             <Route path="/pitch" element={<PitchPage />} />
             <Route path="/pitch/:id" element={<PitchPage />} />

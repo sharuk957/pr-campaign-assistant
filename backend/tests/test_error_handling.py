@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from app.core.errors import AppException, BadRequestError, NotFoundError
+from app.core.errors import AIGenerationError, AppException, BadRequestError, NotFoundError
 from app.main import app
 
 
@@ -38,6 +38,22 @@ def validate_payload(payload: SamplePayload) -> dict[str, str]:
 @error_testing_router.get("/unhandled-server-error")
 def raise_unhandled() -> None:
     raise RuntimeError("Unexpected server crash")
+
+
+@error_testing_router.get("/upstream-failure")
+def raise_upstream_failure() -> None:
+    raise AIGenerationError(
+        message="AI provider returned an error (status 404)",
+        details={"error": {"message": "The model `x` does not exist", "code": "model_not_found"}},
+    )
+
+
+@error_testing_router.get("/bad-request-with-details")
+def raise_bad_request_with_details() -> None:
+    raise BadRequestError(
+        message="The CSV file is missing required columns: email",
+        details={"missing_columns": ["email"]},
+    )
 
 
 app.include_router(error_testing_router)
@@ -108,3 +124,21 @@ def test_unhandled_server_error_format(client: TestClient) -> None:
             "message": "An unexpected error occurred.",
         }
     }
+
+
+def test_upstream_failure_does_not_expose_raw_provider_details(client: TestClient) -> None:
+    response = client.get("/test-errors/upstream-failure")
+    assert response.status_code == 502
+    data = response.json()
+    assert data["error"]["code"] == "AI_GENERATION_FAILED"
+    assert "message" in data["error"]
+    # Raw upstream provider payloads must not leak through the API response.
+    assert "details" not in data["error"]
+    assert "model_not_found" not in response.text
+
+
+def test_bad_request_details_are_still_returned_to_client(client: TestClient) -> None:
+    response = client.get("/test-errors/bad-request-with-details")
+    assert response.status_code == 400
+    data = response.json()
+    assert data["error"]["details"] == {"missing_columns": ["email"]}

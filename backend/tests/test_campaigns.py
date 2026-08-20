@@ -59,6 +59,66 @@ def test_get_campaign_by_id_success(client: TestClient) -> None:
     assert data["name"] == "Product Launch"
 
 
+def test_update_campaign_api_success(client: TestClient) -> None:
+    payload = {
+        "name": "Product Launch",
+        "company_name": "Tech Corp",
+        "product_description": "Cloud monitoring suite",
+        "campaign_description": "Announcing general availability",
+        "target_audience": "CTOs and DevOps Engineers",
+        "key_topics": "Cloud, DevOps, Observability",
+        "desired_outcome": "Brand awareness",
+    }
+    create_res = client.post("/api/campaigns", json=payload)
+    campaign_id = create_res.json()["id"]
+
+    updated_payload = {**payload, "name": "Product Launch v2", "target_audience": "CTOs only"}
+    update_res = client.put(f"/api/campaigns/{campaign_id}", json=updated_payload)
+    assert update_res.status_code == 200
+    data = update_res.json()
+    assert data["id"] == campaign_id
+    assert data["name"] == "Product Launch v2"
+    assert data["target_audience"] == "CTOs only"
+
+    get_res = client.get(f"/api/campaigns/{campaign_id}")
+    assert get_res.json()["name"] == "Product Launch v2"
+
+
+def test_update_campaign_not_found(client: TestClient) -> None:
+    payload = {
+        "name": "Product Launch",
+        "company_name": "Tech Corp",
+        "product_description": "Cloud monitoring suite",
+        "campaign_description": "Announcing general availability",
+        "target_audience": "CTOs and DevOps Engineers",
+        "key_topics": "Cloud, DevOps, Observability",
+        "desired_outcome": "Brand awareness",
+    }
+    response = client.put("/api/campaigns/non-existent-id-999", json=payload)
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_update_campaign_validation_failure(client: TestClient) -> None:
+    create_res = client.post(
+        "/api/campaigns",
+        json={
+            "name": "Product Launch",
+            "company_name": "Tech Corp",
+            "product_description": "Cloud monitoring suite",
+            "campaign_description": "Announcing general availability",
+            "target_audience": "CTOs and DevOps Engineers",
+            "key_topics": "Cloud, DevOps, Observability",
+            "desired_outcome": "Brand awareness",
+        },
+    )
+    campaign_id = create_res.json()["id"]
+
+    response = client.put(f"/api/campaigns/{campaign_id}", json={"name": "Incomplete"})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
 def test_get_campaign_not_found(client: TestClient) -> None:
     response = client.get("/api/campaigns/non-existent-id-999")
     assert response.status_code == 404
@@ -110,3 +170,17 @@ def test_campaign_service_and_repository(db_session: Session) -> None:
 
     all_campaigns = service.list_campaigns(db_session)
     assert len(all_campaigns) == 1
+
+    update_data = CampaignCreate(
+        name="Updated Service Campaign",
+        company_name="Acme",
+        product_description="Product v2",
+        campaign_description="Story v2",
+        target_audience="Target",
+        key_topics="AI;Dev",
+        desired_outcome="Coverage",
+    )
+    updated = service.update_campaign(db_session, created.id, update_data)
+    assert updated.id == created.id
+    assert updated.name == "Updated Service Campaign"
+    assert updated.product_description == "Product v2"

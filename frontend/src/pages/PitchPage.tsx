@@ -192,7 +192,10 @@ export const PitchPage: FC = () => {
           <ErrorAlert
             title="Pitch Generation Failed"
             message={generateError}
-            onDismiss={() => setGenerateError(null)}
+            onDismiss={() => {
+              setGenerateError(null)
+              setNeedsAnalysis(false)
+            }}
             onRetry={needsAnalysis ? undefined : handleGenerate}
           />
         )}
@@ -246,7 +249,11 @@ export const PitchPage: FC = () => {
         <Link to={`/journalists/${journalistId}`} className="btn btn-secondary">
           &larr; Back to Journalist Details
         </Link>
-        <Link to="/" className="btn btn-primary">
+        <Link
+          to="/"
+          className="btn btn-primary"
+          onClick={() => localStorage.removeItem('active_campaign_id')}
+        >
           Start New Campaign
         </Link>
       </div>

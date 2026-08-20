@@ -29,5 +29,16 @@ class CampaignService:
             raise NotFoundError(message=f"Campaign with ID '{campaign_id}' not found")
         return campaign
 
+    def update_campaign(self, db: Session, campaign_id: str, data: CampaignCreate) -> Campaign:
+        campaign = self.get_campaign(db, campaign_id)
+        campaign.name = data.name.strip()
+        campaign.company_name = data.company_name.strip()
+        campaign.product_description = data.product_description.strip()
+        campaign.campaign_description = data.campaign_description.strip()
+        campaign.target_audience = data.target_audience.strip()
+        campaign.key_topics = data.key_topics.strip()
+        campaign.desired_outcome = data.desired_outcome.strip()
+        return self.repository.update(db, campaign)
+
     def list_campaigns(self, db: Session, limit: int = 100, offset: int = 0) -> list[Campaign]:
         return self.repository.list_all(db, limit=limit, offset=offset)

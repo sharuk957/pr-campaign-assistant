@@ -15,6 +15,11 @@ class CampaignRepository:
     def get_by_id(self, db: Session, campaign_id: str) -> Optional[Campaign]:
         return db.query(Campaign).filter(Campaign.id == campaign_id).first()
 
+    def update(self, db: Session, campaign: Campaign) -> Campaign:
+        db.commit()
+        db.refresh(campaign)
+        return campaign
+
     def list_all(self, db: Session, limit: int = 100, offset: int = 0) -> list[Campaign]:
         return (
             db.query(Campaign)

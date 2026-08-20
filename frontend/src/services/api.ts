@@ -117,6 +117,13 @@ export async function getCampaign(campaignId: string): Promise<Campaign> {
   return apiClient.get<Campaign>(`/api/campaigns/${campaignId}`)
 }
 
+export async function updateCampaign(
+  campaignId: string,
+  data: CampaignCreatePayload
+): Promise<Campaign> {
+  return apiClient.put<Campaign>(`/api/campaigns/${campaignId}`, data)
+}
+
 export async function listCampaigns(): Promise<Campaign[]> {
   return apiClient.get<Campaign[]>('/api/campaigns')
 }

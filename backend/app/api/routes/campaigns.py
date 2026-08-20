@@ -36,6 +36,20 @@ def get_campaign(
     return CampaignResponse.model_validate(campaign)
 
 
+@router.put(
+    "/{campaign_id}",
+    response_model=CampaignResponse,
+    summary="Update an existing campaign",
+)
+def update_campaign(
+    campaign_id: str,
+    payload: CampaignCreate,
+    db: Session = Depends(get_db),
+) -> CampaignResponse:
+    campaign = campaign_service.update_campaign(db, campaign_id, payload)
+    return CampaignResponse.model_validate(campaign)
+
+
 @router.get(
     "",
     response_model=list[CampaignResponse],

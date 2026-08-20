@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FC } from 'react'
 import { Link, useNavigate } from '../router'
-import { getCampaign, importJournalistsCsv, listJournalists } from '../services/api'
+import { ApiRequestError, getCampaign, importJournalistsCsv, listJournalists } from '../services/api'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorAlert } from '../components/common/ErrorAlert'
 import type { AsyncState, Journalist, JournalistImportResult } from '../types'
@@ -21,6 +21,7 @@ export const JournalistsPage: FC = () => {
   const [checkingCampaign, setCheckingCampaign] = useState(
     () => localStorage.getItem('active_campaign_id') !== null
   )
+  const [campaignLoadError, setCampaignLoadError] = useState<string | null>(null)
 
   const [journalistsState, setJournalistsState] = useState<AsyncState<Journalist[]>>({
     status: 'idle',
@@ -48,7 +49,7 @@ export const JournalistsPage: FC = () => {
       })
   }, [])
 
-  useEffect(() => {
+  const loadCampaign = useCallback(() => {
     const activeId = localStorage.getItem('active_campaign_id')
     if (!activeId) return
 
@@ -58,11 +59,25 @@ export const JournalistsPage: FC = () => {
         setCampaignName(campaign.name)
         loadJournalists(campaign.id)
       })
-      .catch(() => {
-        setCampaignId(null)
+      .catch((err) => {
+        if (err instanceof ApiRequestError && err.code === 'NOT_FOUND') {
+          setCampaignId(null)
+          return
+        }
+        setCampaignLoadError(err instanceof Error ? err.message : 'Failed to load campaign data')
       })
       .finally(() => setCheckingCampaign(false))
   }, [loadJournalists])
+
+  useEffect(() => {
+    loadCampaign()
+  }, [loadCampaign])
+
+  const handleRetryLoadCampaign = () => {
+    setCheckingCampaign(true)
+    setCampaignLoadError(null)
+    loadCampaign()
+  }
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
@@ -95,6 +110,20 @@ export const JournalistsPage: FC = () => {
     return (
       <div className="page journalists-page">
         <LoadingSpinner message="Loading campaign data..." />
+      </div>
+    )
+  }
+
+  if (campaignLoadError) {
+    return (
+      <div className="page journalists-page">
+        <div className="page-card">
+          <ErrorAlert
+            title="Unable to Load Campaign Data"
+            message={campaignLoadError}
+            onRetry={handleRetryLoadCampaign}
+          />
+        </div>
       </div>
     )
   }
@@ -156,9 +185,13 @@ export const JournalistsPage: FC = () => {
             type="file"
             accept=".csv"
             onChange={handleFileChange}
+            disabled={isUploading}
             className="file-input-hidden"
           />
-          <label htmlFor="journalist-csv-input" className="btn btn-secondary">
+          <label
+            htmlFor="journalist-csv-input"
+            className={`btn btn-secondary ${isUploading ? 'btn-disabled' : ''}`}
+          >
             Choose CSV File
           </label>
           <span className="selected-file-name">

@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,8 @@ from app.repositories.campaign_repository import CampaignRepository
 from app.repositories.journalist_repository import JournalistRepository
 from app.schemas.analysis import AnalysisResponse, CampaignAnalysisRunResult, JournalistAnalysisOutcome
 from app.services.ai_context import to_campaign_context, to_journalist_context
+
+logger = logging.getLogger(__name__)
 
 
 class AnalysisService:
@@ -47,6 +50,11 @@ class AnalysisService:
                 ai_result = self.ai_service.analyze_journalist(campaign_context, journalist_context)
             except AIServiceError as exc:
                 failed += 1
+                logger.warning(
+                    f"Analysis failed for journalist '{journalist.id}' in campaign '{campaign_id}': "
+                    f"{exc.message}",
+                    extra={"details": exc.details},
+                )
                 results.append(
                     JournalistAnalysisOutcome(
                         journalist_id=journalist.id,

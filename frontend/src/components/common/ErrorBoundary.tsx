@@ -37,9 +37,15 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="error-boundary-fallback">
           <div className="error-boundary-card">
             <h2>Application Error</h2>
-            <p>An unexpected error occurred in the application.</p>
+            <p>
+              Something went wrong loading this page. This has been noted &mdash; try again or reload
+              the page.
+            </p>
             {this.state.error?.message && (
-              <p className="error-boundary-message">{this.state.error.message}</p>
+              <details className="error-boundary-details">
+                <summary>Technical details</summary>
+                <p className="error-boundary-message">{this.state.error.message}</p>
+              </details>
             )}
             <div className="error-boundary-buttons">
               <button type="button" className="btn btn-primary" onClick={this.handleReset}>
